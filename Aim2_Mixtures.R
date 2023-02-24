@@ -57,7 +57,7 @@ model <- pcr(hp~mpg+disp+drat+wt+qsec, data=mtcars, scale=TRUE, validation="CV")
 ## Exploratory factor analysis --------------------------------------
 install.packages("REdaS")
 library(REdaS)
-install.packages("GPArotation")
+install.packages("GPArotation") 
 library(GPArotation)
 library(psych)
  
