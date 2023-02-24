@@ -60,7 +60,7 @@ library(REdaS)
 install.packages("GPArotation")
 library(GPArotation)
 library(psych)
-
+ 
 data <- read_csv("CE_blockgroupNEI_tertile.csv")
 data <- mutate_all(data, function(x) as.numeric(as.character(x)))
 
