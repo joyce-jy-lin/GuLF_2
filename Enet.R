@@ -1,6 +1,7 @@
-setwd("/Users/joycelin/Desktop/Gulf/Aim2")
+setwd("/Users/joycelin/Desktop/Gulf/Aim2/GuLF_2")
 library(tidyverse)
 library(dplyr)
+library(readxl)
 data <- read_csv("CE_blockgroupNEI_tertile.csv")
 low_metals <- c("Cd", "Co", "Mo" ,"V", "Sb") # metals below 60% detect
 `%notin%` <- Negate(`%in%`)
@@ -15,7 +16,6 @@ data$CoBinary <- as.factor(data$CoBinary)
 data$MoBinary <- as.factor(data$MoBinary)
 data$SbTertile <- as.factor(data$SbTertile)
 data$VTertile <- as.factor(data$VTertile)
-data$road500 <- as.factor(data$road500)
 data$STATEFP <- as.factor(data$STATEFP)
 data$road50 <- as.factor(data$road50) #roads functional class 1, 2, 3, 4 (highways and secondary highways)
 data$road100 <- as.factor(data$road100)
@@ -47,6 +47,11 @@ data<- data %>% mutate(As_idw = As10_SUMEMISSIONS/AsDistance,
                        Mn_idw = Mn10_SUMEMISSIONS/MnDistance,
                        Se_idw = Se10_SUMEMISSIONS/SeDistance,
                        Hg_idw = Hg10_SUMEMISSIONS/HgDistance) # end function
+
+data<- data %>% mutate(workstat = case_when(workstat == 1 ~ 'Working now',
+                                       workstat >=2 & workstat <8 ~ 'Not working',
+                                       workstat ==8 ~ 'Other',
+                                       )) # end function
 
 
 data_log <- data %>% mutate(across(c(Mg, Al, Ca, Cr, Mn, Fe, Ni, Cu, Zn, As, Se, Hg, Pb), log10))
@@ -81,7 +86,7 @@ custom <-trainControl(method = "repeatedcv",
 #linear model
 set.seed(123)
 lm<-train(Pb~.,
-               train,
+               datapb,
                method = "lm",
                trControl = custom)
 lm$results
@@ -91,7 +96,7 @@ summary(lm)
 #ridge regression
 set.seed(123)
 ridge<-train(Pb~.,
-             train,
+             datapb,
              method='glmnet',
              tuneGrid = expand.grid(alpha=0,
              lambda = seq(0.0001, 1, length=5)),
@@ -107,7 +112,7 @@ plot(varImp(ridge, scale=F))
 #Lasso regression
 set.seed(123)
 lasso<-train(Pb~.,
-             train,
+             datapb,
              method = 'glmnet',
              tuneGrid = expand.grid(alpha=1,
                                    lambda = seq(0.000001, 0.2, length=5)),
@@ -121,16 +126,18 @@ plot(varImp(lasso, scale=F))
 #Elastic net
 set.seed(123)
 en<-train(Pb~.,
-          train,
+          datapb,
           method='glmnet',
           tuneGrid = expand.grid(alpha = seq(0,1, length=10),
                                  lambda=seq(0.0001, 1, length=5)),
           trControl=custom)
 
 plot(en)
+en
 plot(en$finalModel, xvar = "lambda", lable = T)
 plot(en$finalModel, xvar = 'dev', label=T)
 plot(varImp(en, scale=F))
+coef(enet, s=en$bestTune$lambda)
 
 # compare models
 model_list <- list(LinearModel = lm, Ridge = ridge, Lasso = lasso, ElasticNet=en)
